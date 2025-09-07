@@ -3,8 +3,17 @@
 
 header('Content-Type: application/json');
 
-require_once '../config/db.php'; // $conn
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    echo json_encode(['status' => 'error', 'message' => 'Only POST requests are allowed']);
+    exit;
+}
 
+require_once '../config/db.php';  
+
+if (!isset($conn)) {
+    echo json_encode(['status' => 'error', 'message' => 'Database connection not established']);
+    exit;
+}
 $data = json_decode(file_get_contents('php://input'), true);
 
 $name = trim($data['name'] ?? '');
