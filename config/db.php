@@ -1,7 +1,7 @@
 <?php
 // backend/db.php
 
-$host = 'localhost';      // usually localhost
+$host = 'localhost';     
 $dbname = 'ward_complain';
 $username = 'root';
 $password = '';

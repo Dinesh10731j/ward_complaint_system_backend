@@ -1,6 +1,4 @@
 <?php
-
-
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -9,16 +7,19 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 require_once '../config/db.php';  
+require_once '../config/cloudinary.php';
+
+use Cloudinary\Api\Upload\UploadApi;
 
 if (!isset($conn)) {
     echo json_encode(['status' => 'error', 'message' => 'Database connection not established']);
     exit;
 }
-$data = json_decode(file_get_contents('php://input'), true);
 
-$name = trim($data['name'] ?? '');
-$ward = trim($data['ward'] ?? '');
-$complaint = trim($data['complaint'] ?? '');
+$name = trim($_POST['name'] ?? '');
+$ward = trim($_POST['ward'] ?? '');
+$complaint = trim($_POST['complaint'] ?? '');
+$imageUrl = null;
 
 // Validate
 if (empty($name) || empty($ward) || empty($complaint)) {
@@ -26,20 +27,36 @@ if (empty($name) || empty($ward) || empty($complaint)) {
     exit;
 }
 
+// Handle file upload
+if (!empty($_FILES['image']['tmp_name'])) {
+    try {
+        $upload = (new UploadApi())->upload($_FILES['image']['tmp_name']);
+        $imageUrl = $upload['secure_url']; // store in DB
+    } catch (Exception $e) {
+        echo json_encode(['status' => 'error', 'message' => 'Image upload failed: ' . $e->getMessage()]);
+        exit;
+    }
+}
+
 // Default status = pending
 $status = 'pending';
 
 // Insert complaint
-$stmt = $conn->prepare("INSERT INTO complaints (name, ward, complaint, status) VALUES (?, ?, ?, ?)");
+$stmt = $conn->prepare("INSERT INTO complaints (name, ward, complaint, imageUrl, status) VALUES (?, ?, ?, ?, ?)");
 if (!$stmt) {
     echo json_encode(['status' => 'error', 'message' => 'DB error: ' . $conn->error]);
     exit;
 }
 
-$stmt->bind_param("ssss", $name, $ward, $complaint, $status);
+$stmt->bind_param("sssss", $name, $ward, $complaint, $imageUrl, $status);
 
 if ($stmt->execute()) {
-    echo json_encode(['status' => 'success', 'message' => 'Complaint submitted', 'complaint_id' => $stmt->insert_id]);
+    echo json_encode([
+        'status' => 'success',
+        'message' => 'Complaint submitted',
+        'complaint_id' => $stmt->insert_id,
+        'imageUrl' => $imageUrl
+    ]);
 } else {
     echo json_encode(['status' => 'error', 'message' => 'Failed to submit complaint']);
 }

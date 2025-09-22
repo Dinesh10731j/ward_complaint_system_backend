@@ -1,5 +1,8 @@
 <?php
 header('Content-Type: application/json');
+header("Access-Control-Allow-Origin: *"); // allow all origins
+header("Access-Control-Allow-Methods:POST");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['status' => 'error', 'message' => 'Only POST requests are allowed']);
@@ -19,8 +22,9 @@ $data = json_decode(file_get_contents('php://input'), true);
 $username = trim($data['username'] ?? '');
 $email = strtolower(trim($data['email'] ?? ''));
 $password = $data['password'] ?? '';
+$confirmPasword = $data['confirm_password'] ?? '';
 
-if (empty($username) || empty($email) || empty($password)) {
+if (empty($username) || empty($email) || empty($password) || empty($confirmPasword)) {
     echo json_encode(['status' => 'error', 'message' => 'All fields are required']);
     exit;
 }
