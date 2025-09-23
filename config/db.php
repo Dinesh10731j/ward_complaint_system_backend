@@ -11,9 +11,8 @@ $conn = new mysqli($host, $username, $password, $dbname);
 
 // Check connection
 if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+    echo json_encode(['status'=>'error','message'=>'Database connection failed']);
+    exit;
 }
 
-// Optional: Confirm connection
-echo "Connected successfully";
 ?>
