@@ -16,65 +16,31 @@ if (!isset($conn)) {
 // Get POST data (JSON)
 $data = json_decode(file_get_contents('php://input'), true);
 
-$username = trim($data['username'] ?? '');
-$email = strtolower(trim($data['email'] ?? ''));
-$password = $data['password'] ?? '';
-$confirmPasword = $data['confirm_password'] ?? '';
+$id = trim($data['id'] ?? '');
+$status = trim($data['status'] ?? '');
 
-if (empty($username) || empty($email) || empty($password) || empty($confirmPasword)) {
-    echo json_encode(['status' => 'error', 'message' => 'All fields are required']);
+if (empty($id) || empty($status)) {
+    echo json_encode(['status' => 'error', 'message' => 'ID and status are required']);
     exit;
 }
 
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    echo json_encode(['status' => 'error', 'message' => 'Invalid email format']);
-    exit;
-}
-
-if (strlen($password) < 6) {
-    echo json_encode(['status' => 'error', 'message' => 'Password must be at least 6 characters']);
-    exit;
-}
-
-// Check if email already exists
-$stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+// Update complaint status
+$stmt = $conn->prepare("UPDATE complaints SET status = ? WHERE id = ?");
 if (!$stmt) {
     echo json_encode(['status' => 'error', 'message' => 'Prepare failed: ' . $conn->error]);
     exit;
 }
 
-$stmt->bind_param("s", $email);
-
-if (!$stmt->execute()) {
-    echo json_encode(['status' => 'error', 'message' => 'Execute failed: ' . $stmt->error]);
-    exit;
-}
-
-$stmt->store_result();
-
-if ($stmt->num_rows > 0) {
-    echo json_encode(['status' => 'error', 'message' => 'Email already registered']);
-    $stmt->close();
-    exit;
-}
-$stmt->close();
-
-// Hash the password
-$hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-
-// Insert user
-$stmt = $conn->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
-if (!$stmt) {
-    echo json_encode(['status' => 'error', 'message' => 'Prepare failed: ' . $conn->error]);
-    exit;
-}
-
-$stmt->bind_param("sss", $username, $email, $hashedPassword);
+$stmt->bind_param("si", $status, $id);
 
 if ($stmt->execute()) {
-    echo json_encode(['status' => 'success', 'message' => 'User registered successfully']);
+    if ($stmt->affected_rows > 0) {
+        echo json_encode(['status' => 'success', 'message' => 'Complaint status updated successfully']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'No complaint found with this ID']);
+    }
 } else {
-    echo json_encode(['status' => 'error', 'message' => 'Failed to register user: ' . $stmt->error]);
+    echo json_encode(['status' => 'error', 'message' => 'Failed to update complaint: ' . $stmt->error]);
 }
 
 $stmt->close();
