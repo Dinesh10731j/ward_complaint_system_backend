@@ -4,10 +4,11 @@
 $host = 'localhost';     
 $dbname = 'ward_complain';
 $username = 'root';
-$password = '';
+$password = 'root';
+$port = 3307;
 
 // Create connection
-$conn = new mysqli($host, $username, $password, $dbname);
+$conn = new mysqli($host, $username, $password, $dbname, $port);
 
 // Check connection
 if ($conn->connect_error) {
